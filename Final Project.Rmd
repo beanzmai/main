@@ -1,0 +1,112 @@
+---
+title: "Asteroids"
+author: "Tuan Nguyen"
+date: "6/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r IMPORT DATASET}
+### Clear past variables and import the diabetes dataset. Load in packages.
+rm(list=ls())
+df <- read.csv(file = 'C:\\Users\\cg\\Desktop\\Echo\\School\\DSC607\\Week 5\\Asteroids.csv')
+
+library(tidyverse)
+library(caret)
+library(pROC)
+library(rpart)
+library(mlbench)
+library(cvms)
+library(broom)
+library(tibble)
+
+
+df <- select(df, 6,7,16,20,40)
+
+
+df %>% 
+  rename(
+    Estimated_Diameter_Min = Est.Dia.in.M.min.,
+    Estimated_Diameter_Max = Est.Dia.in.M.max.,
+    Speed = Miles.per.hour,
+    Miss_Distance = Miss.Dist..miles.
+    )
+
+
+```
+
+```{r BASIC INFO}
+### Generate basic information about the dataset with some standard R functions
+
+head(df)
+nrow(df)
+ncol(df)
+str(df)
+summary(df)
+
+sd(df$Est.Dia.in.M.min.)
+sd(df$Est.Dia.in.M.max.)
+sd(df$Miles.per.hour)
+sd(df$Miss.Dist..miles.)
+
+### There appears to be an outlier in the data, so we will filter it out and regenerate the basic information from above.
+df <- filter(df, df$Est.Dia.in.M.max. < 30000)
+
+
+summary(df)
+sd(df$Est.Dia.in.M.min.)
+sd(df$Est.Dia.in.M.max.)
+sd(df$Miles.per.hour)
+sd(df$Miss.Dist..miles.)
+
+```
+
+```{r Graphs}
+### Draw some Basic Graphs
+
+ht <- table(df$Hazardous)
+ht
+
+pie <- pie(ht)
+pie
+
+hist(df$Est.Dia.in.M.min.)
+hist(df$Est.Dia.in.M.max.)
+hist(df$Miles.per.hour)
+hist(df$Miss.Dist..miles.)
+
+plot <- ggplot(df, aes(df$Miles.per.hour, df$Est.Dia.in.M.max.)) + geom_point()
+plot
+```
+
+
+```{r Data Partition}
+### Create a training and test dataset from the original dataset.
+set.seed(1234)
+independent <- sample(2, nrow(df), replace = T, prob=c(0.7, 0.3))
+train <- df[independent==1,]
+test <- df[independent==2,]
+```
+
+``` {R K Nearest Neighbor}
+### Train our model to predict class labels with KNN and 10-Fold Cross Validation (Repeated 3 times) using the training subset of the Asteroid dataset.
+
+set.seed(222)
+model <- train(Hazardous ~ ., 
+                  data=train, 
+                  method = 'knn', 
+                  trControl=trainControl(method = 'repeatedcv', 
+                                         number = 10,
+                                         repeats = 3))
+print(model)
+```
+
+```{r Prediction}
+### Use our classification model to predict the class labels in the testing data subset. Review the ConfusionMatrix to identify the number of correctly guessed labels.
+
+prediction <- predict(model, newdata = test)
+confusionMatrix(prediction, test$Hazardous)
+```

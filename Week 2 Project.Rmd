@@ -1,0 +1,92 @@
+---
+title: "Module 2 Project"
+author: "Tuan Nguyen"
+date: "3/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Import File}
+### Import "NYPD Shooting Incident Data (Historic)" file from data.gov
+### This is a breakdown of every shooting incident that occurred in NYC going back to 2006 through the end of the previous calendar year. This data is manually extracted every quarter and reviewed by the Office of Management Analysis and Planning before being posted on the NYPD website. Each record represents a shooting incident in NYC and includes information about the event, the location and the time of occurrence. In addition, information related to suspect and victim demographics is also included.
+
+nypd <- read.csv(file = "C:\\Users\\cg\\Desktop\\Echo\\School\\DSC503\\Project2\\nypd.csv")
+
+```
+
+```{r Data Summary}
+### Generate basic information about the data set or summary statistics.
+head(nypd, 3)
+summary(nypd)
+```
+
+```{r Data Preparation}
+
+### Remove Unused Columns so that analysis does not get bogged down by an excess of unnecessary information.
+nypd$PRECINCT <- NULL
+nypd$JURISDICTION_CODE <- NULL
+nypd$LOCATION_DESC <- NULL
+nypd$STATISTICAL_MURDER_FLAG <- NULL
+nypd$PERP_SEX <- NULL
+nypd$VIC_SEX <- NULL
+nypd$PERP_AGE_GROUP <- NULL
+nypd$VIC_AGE_GROUP <- NULL
+nypd$X_COORD_CD <- NULL
+nypd$Y_COORD_CD <- NULL
+nypd$Latitude <- NULL
+nypd$Longitude <- NULL
+
+### Replace NULL values in Race Columns with "UNKNOWN" for consistency sake.
+nypd[nypd$PERP_RACE == '', 'PERP_RACE'] <- 'UNKNOWN'
+nypd[nypd$VIC_RACE == '', 'VIC_RACE'] <- 'UNKNOWN'
+
+
+### Times were originally written out like 3:57:00 for 3:57 AM, and 23:00:00 for 11:00 PM. These values were not numeric so I removed the colons (:) in order to enable me to use operators.
+nypd$OCCUR_TIME2 <- as.numeric(gsub(':','',nypd$OCCUR_TIME))
+
+
+### I then created a "Time of Day" column, in order to easily identify during which time of day most shootings occur.
+nypd$TIME_OF_DAY <- '12a-3a'
+nypd[nypd$OCCUR_TIME2 >=  30000 & nypd$OCCUR_TIME2 < 60000, ]$TIME_OF_DAY <- '3a-6a'
+nypd[nypd$OCCUR_TIME2 >=  60000 & nypd$OCCUR_TIME2 < 90000, ]$TIME_OF_DAY <- '6a-9a'
+nypd[nypd$OCCUR_TIME2 >=  90000 & nypd$OCCUR_TIME2 < 120000, ]$TIME_OF_DAY <- '9a-12p'
+nypd[nypd$OCCUR_TIME2 >= 120000 & nypd$OCCUR_TIME2 < 150000, ]$TIME_OF_DAY <- '12p-3p'
+nypd[nypd$OCCUR_TIME2 >= 150000 & nypd$OCCUR_TIME2 < 180000, ]$TIME_OF_DAY <- '3p-6p'
+nypd[nypd$OCCUR_TIME2 >= 180000 & nypd$OCCUR_TIME2 < 210000, ]$TIME_OF_DAY <- '6p-9p'
+nypd[nypd$OCCUR_TIME2 >= 210000,]$TIME_OF_DAY <- '9p-12a'
+
+### I reordered the levels Chronologically so Visualizations in the next step will make more sense.
+nypd$TIME_OF_DAY <- factor(nypd$TIME_OF_DAY, levels = c('12a-3a', '3a-6a', '6a-9a', '9a-12p', '12p-3p', '3p-6p', '6p-9p', '9p-12a'))
+
+### Hide the "OCCUR_TIME2" column
+nypd <- subset(nypd, select = -c(OCCUR_TIME2) )
+
+### Reanalyze the dataset after data has been processed.
+head(nypd, 3)
+summary(nypd)
+
+```
+
+```{r Visualization 1}
+### The Table and Barplot of below shows during which time of day shootings are most prevalent. I would be curious to find out why shootings increase as the day goes on and then has a large drop off in the early morning. 
+table(nypd$TIME_OF_DAY)
+barplot(table(nypd$TIME_OF_DAY))
+```
+
+```{r Visualization 2}
+### The Table and Pie of belows show which Boroughs have the most shootings. For future research I could use additional information to find why certain boroughs have more shootings than others. Perhaps it has to do with race, education, average income, etc.?
+table(nypd$BORO)
+pie(table(nypd$BORO))
+```
+
+``````{r Visualization 3}
+### My third visualization is also a bar graph, but this time I am testing out the different tools that R has to offer. I downloaded the tidyverse package and am using ggplot2 to visualize my data this time. 
+library(ggplot2)
+nypdvr <- data.frame(table(nypd$VIC_RACE))
+p <- ggplot(data=nypdvr, aes(x=Var1, y=Freq)) + geom_bar(stat="identity")
+p
+
+```

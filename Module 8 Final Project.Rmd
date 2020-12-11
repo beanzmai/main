@@ -1,0 +1,104 @@
+---
+title: "Module 8 Final Project"
+author: "Tuan Nguyen"
+date: "4/29/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Clear Variables & Load Packages}
+### Clear past variables and load in packages.
+
+rm(list=ls())
+library(tidyverse)
+library(ggplot2)
+```
+
+
+```{r Import and Attach Dataset}
+### Import the WHR dataset.
+
+df <- read.csv(file = "C:\\Users\\cg\\Desktop\\Echo\\School\\DSC503\\Course Project\\world-happiness\\2019.csv")
+```
+
+```{r HEAD, NROW, NCOL, COLNAMES}
+### Quickly examine the dataset with a few standard functions
+head(df) # View the first few rows of the dataset
+nrow(df) # Count how many rows are in the dataset
+ncol(df) # Count how many columns are in the dataset
+colnames(df) # Identify the column names
+str(df) # Identify the data types of each column
+summary(df)
+```
+
+
+``` {r Linear Regression}
+### Perform a linear regression analysis using all independent variables.
+
+model <- lm(Score ~ 
+              GDP.per.capita + 
+              Social.support + 
+              Healthy.life.expectancy + 
+              Freedom.to.make.life.choices + 
+              Generosity + 
+              Perceptions.of.corruption, 
+            data = df)
+
+summary(model)
+```
+
+``` {r Linear Regression 2}
+### After peforming the linear regression analysis, we see the "Generosity" and "Perceptions of Corruption" variables are statistically insignificant to our model. We'll remove those variables from our linear regression and rerun the analysis.
+
+model2 <- lm(Score ~ 
+              GDP.per.capita + 
+              Social.support + 
+              Healthy.life.expectancy + 
+              Freedom.to.make.life.choices,
+            data = df)
+
+summary(model2)
+```
+```{r Plots}
+
+### GDP Per Capita vs Happiness Score Plot
+gdpPlot <- ggplot(data=df, aes(x=GDP.per.capita, y=Score)) + 
+  geom_point() + 
+  geom_smooth(method='lm') +
+  labs(title = 'GDP Per Capita vs Happiness Score', y = 'Happiness Score', x = 'GDP Per Capita')
+
+gdpPlot
+
+### Social Support vs Happiness Score Plot
+ssPlot <- ggplot(data=df, aes(x=Social.support, y=Score)) + 
+  geom_point() + 
+  geom_smooth(method='lm') +
+  labs(title = 'Social Support vs Happiness Score', y = 'Happiness Score', x = 'Social Support')
+
+ssPlot
+
+### Healthy Life Expectancy vs Happiness Score Plot
+hlePlot <- ggplot(data=df, aes(x=Healthy.life.expectancy, y=Score)) + 
+  geom_point() + 
+  geom_smooth(method='lm') +
+  labs(title = 'Healthy Life Expectancy vs Happiness Score', y = 'Happiness Score', x = 'Healthy Life Expectancy')
+
+hlePlot
+
+### Freedom To Make Life Choices vs Happiness Score Plot
+flcPlot <- ggplot(data=df, aes(x=Freedom.to.make.life.choices, y=Score)) + 
+  geom_point() +
+  geom_smooth(method='lm') +
+  labs(title = 'Freedom To Make Life Choices vs Happiness Score', y = 'Happiness Score', x = 'Freedom To Make Life Choices')
+
+flcPlot
+```
+``` {r WORKS CITED}
+### Works Cited
+### Kaggle. World Happiness Report (November 26, 2019). Retrieved February 29, 2020 from https://www.kaggle.com/unsdsn/world-happiness/metadata
+```

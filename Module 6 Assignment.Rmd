@@ -1,0 +1,97 @@
+---
+title: "Module 6 Assignment"
+author: "Tuan Nguyen"
+date: "4/22/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Clear Variables & Load Packages}
+rm(list=ls())
+library(fpp2)
+library(tidyverse)
+```
+
+```{r Import, Head, Summary}
+### Import the "Temp" dataset and perform preliminary analysis of the data.
+### This dataset describes the minimum daily temperatures over 10 years (1981-1990) in the city Melbourne, Australia.
+### The units are in degrees Celsius.
+### The source of the data is credited as the Australian Bureau of Meteorology.
+### https://machinelearningmastery.com/time-series-datasets-for-machine-learning/
+
+df <- read.csv(file = "C:\\Users\\cg\\Desktop\\Echo\\School\\DSC503\\Module 6\\Temp.csv")
+head(df)
+summary(df)
+nrow(df)
+ncol(df)
+```
+
+```{r Declare Time Series Data}
+### Use the ts() function to declare there is Time Series data in my data set.
+ts <- ts(df[,2], start=c(1981,1), frequency = 365)
+```
+
+```{r Preliminary Analysis}
+### Preliminary analysis of the Time Series Data.
+
+autoplot(ts) + 
+  ggtitle('Temperature over Time') + 
+  xlab('Year') + 
+  ylab('Temperatur (in Celsius)')
+
+### The resulting graph appears to have seasonal patterns but does not seem to have an upward or downward trend.
+```
+```{r Seasonality}
+### Identify if fluctuations are happening at the same time each year of if there are irregular fluctuations in the data as well.
+ggseasonplot(ts) + 
+  ggtitle('Seasonality Plot: Changes in Daily Temperature each year') +
+  xlab('Day') + 
+  ylab('Temperature (in Celsius)')
+
+### At first I was confused by the plot because the colder temperatures happened in the middle of the year (during summer), but then I remembered the seasons in Australia are opposite of what we are used to here in the United States. This was very fascinating to see.
+```
+```{r Benchmark}
+### Use a benchmark method to forecast future temperatures.
+### Specifically, we will use the seasonal naive benchmark method to forecast.
+snaive_ts <- snaive(ts)
+print(summary(snaive_ts))
+checkresiduals(snaive_ts)
+
+### The summary shows our Residual Standard Deviation is 3.9276. This is a measure of how well our data is fitting, with smaller numbers closer to zero being better.
+
+### The residual plot show the data appears to be random. 
+### The ACF plot shows the residuals (the part of the data the model cant explain). Ideally we do not want any auto-correlation over time, so we would not want any of the black bars to extend past the blue dashed line (The blue dashed line is the 95% confidence interval).
+
+### Our Residual SD and the ACF plot are two metrics/tools we can use to identify how good our forecast is. Although the RSD was low, we can try a different model in an attempt to find a model with better ACF.
+
+ets_ts <- ets(ts)
+print(summary(ets_ts))
+checkresiduals(ets_ts)
+
+### This new model returns a sigma(Residual Standard Deviation) of 2.6126, which is lower than the RST from the SNAIVE model above. However, we should be mindful there are still autocorrelations present in this model, as seen in the new ACF plot.
+```
+
+```{r Forecast}
+### We will now do the forecast with our ETS model, since it has a lower Standard Deviation than the SNaive model.
+fcst <- forecast(ets_ts, h = 365)
+autoplot(fcst)
+print(summary(fcst))
+
+### Once I saw the result of my forecast, I was a bit confused. Why was it just a straight line? This does not appear to be much of a forecast at all! However, after doing some more research, I learned flat forecasts are sometimes expected. Flat forecasts can actually tell us a lot about our time series. Specifically, a flat forecast tells us "there is no trend, no seasonality, and insufficient temporal dynamics to allow the future observations to have different conditional means." (Hyndman, 2012)
+
+### Although the results were not quite what I was hoping for or expecting, I have to remember that sometimes in Data Science that happens. The results may not always tell the story you thought it would but that does not mean it's wrong. As data scientists, we have to explore all of our results and understand why we got the results that we did.
+ 
+```
+
+```{r Works Cited}
+### Works Cited
+
+### Machine Learning Mastery. 7 Time Series Datasets for Machine Learning (2016, November 30). Retrieved April 22, 2020 from https://machinelearningmastery.com/time-series-datasets-for-machine-learning/
+
+### Hyndman, Rob J. (2012, August 19). Flat forecasts. Retrieved April 22, 2020 from https://robjhyndman.com/hyndsight/flat-forecasts/
+```
+
+

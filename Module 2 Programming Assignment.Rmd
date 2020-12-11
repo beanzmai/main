@@ -1,0 +1,129 @@
+---
+title: "DSC607 - Module 2"
+author: "Tuan Nguyen"
+date: "5/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r IMPORT DATASET}
+### Clear past variables and import the diabetes dataset. Load tidyverse, pROC, and caret packages.
+
+### Import the Diabetes dataset (retrieved from https://www.kaggle.com/kandij/diabetes-dataset)
+
+### "The data was collected and made available by “National Institute of Diabetes and Digestive and Kidney Diseases” as part of the Pima Indians Diabetes Database. Several constraints were placed on the selection of these instances from a larger database. In particular, all patients here belong to the Pima Indian heritage (subgroup of Native Americans), and are females of ages 21 and above."
+
+### Using this dataset, we will perform a logistic regression with 10-fold cross validation to see the effects Body Mass Index (BMI) has on the outcome (0 for no diabetes, 1 for has diabetes)
+
+rm(list=ls())
+df <- read.csv(file = 'C:\\Users\\cg\\Desktop\\Echo\\School\\DSC607\\Week 2\\diabetes.csv')
+
+library(tidyverse)
+library(caret)
+library(pROC)
+```
+
+```{r BASIC INFO}
+### Generate basic information about the dataset with some standard R functions
+
+head(df)
+nrow(df)
+ncol(df)
+str(df)
+summary(df)
+```
+```{r Data Preprocessing}
+### DATA PREPROCESSING ###
+
+### Since it's not possible to have a BMI of 0, we will remove these records from our analysis as these records appear to be illogical. We'll only perform the logistic regression with the subset of data where the BMI value is not zero. In addition, since we're only performing our logistic regression analysis with the BMI attribute, we will remove the other attributes from our data frame as well.
+
+subset <- select(filter(df, BMI != 0), BMI, Outcome)
+
+```
+
+```{r Logistic Regression with Cross Validation}
+### Now, we'll perform a logistic regression with Repeated 10-fold cross validation. Cross validation is used to measure the performance of a predictive model (in this case, a logistic regression) by splitting up the data into two sets; a training set which is used to build the model and a testing set which is used to validate the model. 
+
+### By using a Repeated 10-fold cross validation, we will be able to evaluate our model's performance by calculating the average prediction error rate. We start by splitting the data into 10 "subsets" and reserve just one subset for validation while we use the other 9 subsets to build the model. We test the model and repeat the process 9 more times using a different subset for validation each time. Once all 10 subsets have been tested, we repeat the entire process a few more times (in this case, we will repeat the model another two times). At the end, we compute the average of the recorded errors.
+
+model <- train(Outcome ~ BMI, 
+                     data = subset, 
+                     method = 'glm',
+                     family = 'binomial',
+                     trControl = trainControl(
+                       method = 'repeatedcv',
+                       number = 10,
+                       repeats = 3))
+
+### Examine Model Predictions ###
+
+model 
+
+summary(model)
+
+### The RSquared for the Cross Validation model is 0.09999155. This value means our cross validation model accounts for 10% of the variance in our outcome.
+
+model$resample ### We can also examine the model predictions for each individual fold and repeat. The RMSE, Rquared, and MAE above (when we examine the model) are averages of the individual values here.
+```
+
+```{r Interpretation}
+### Our intercept is -3.99682
+### Our BMI variable has a coefficient of .10250
+
+### If BMI is equal to zero, then the LogOdds would be: Outcome = -3.99682 + 0.10250(0)
+Outcome0 <- -3.99682
+Outcome0
+
+### If BMI is equal to one, then the LogOdds would be: Outcome = -3.99682 + 0.10250(1)
+Outcome1 <- -3.99682 + 0.10250
+Outcome1
+
+### We can then get the Odds Ratio by dividing Outcome0 by Outcome1.
+OddsRatio_Outcome <- Outcome0/Outcome1
+OddsRatio_Outcome
+
+### This ratio means that for each unit  that the BMI variable increases, the odds of having diabetes rises by 2.632%
+```
+
+```{r Plot}
+### Draw a logistic regression plot
+
+plot <- ggplot(data=subset, aes(x=BMI, y=Outcome)) + 
+  geom_point() + 
+  stat_smooth(method="glm", 
+              method.args=list(family="binomial"),
+              se=TRUE, 
+              fullrange = TRUE)
+
+print(plot)
+```
+
+```{r ROC}
+### Draw a receiver operating characteristic (ROC) curve. An ROC curve is used to show the diagnostic ability of binary classifiers (Displayr, 2020). The ROC cruve plots the true posive rate (TPR) on the Y axis, against the false positive rate (FPR) on the X axis. 
+
+fit <- glm(subset$Outcome~subset$BMI, data=df, family=binomial(link='logit'))
+
+par(pty='s') 
+roc(subset$Outcome, 
+    fit$fitted.values, 
+    plot=TRUE, 
+    legacy.axes=TRUE, 
+    percent=TRUE, 
+    xlab = 'False Positive Percentage', 
+    ylab = 'True Positive Percentage')
+
+### The area under the curve (or AUC) is .687 (68.7%). This value measures how well predictions are ranked and the quality of the model's predictions.
+### AUC can be interpreted as the "probability that the model ranks a random positive example more highly than a random negative example". 
+### A model where the predictions are 100% wrong would have an AOC of 0, while a model with predictions 100% correct would have an AUC of 1.
+### (Machine Learning Crash Course, 2020). 
+```
+
+```{r Works Cited}
+### WORKS CITED ###
+
+### Displayr. What is a ROC Curve and How to Interpret It. Retrieved May 21, 2020 from https://www.displayr.com/what-is-a-roc-curve-how-to-interpret-it/
+### Machine Learning Crash Course. Classification: ROC Curve and AUC. Retrieved May 21, 2020 from https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc
+### STHDA. Regression Model Validation (2018, November 03). Retrieved May 21, 2020 from http://www.sthda.com/english/articles/38-regression-model-validation/157-cross-validation-essentials-in-r/
+```

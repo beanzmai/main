@@ -1,0 +1,108 @@
+---
+title: "DSC607 - Module 1"
+author: "Tuan Nguyen"
+date: "5/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r IMPORT DATASET}
+### Clear past variables and import the Mortality Outcomes for Females Suffering Myocardial Infarction" dataset. Load tidyverse library
+
+rm(list=ls())
+df <- read.csv(file = 'C:\\Users\\cg\\Desktop\\Echo\\School\\DSC607\\Week 1\\mifem.csv')
+
+
+library(tidyverse)
+```
+
+```{r BASIC INFO}
+### Generate basic information about the dataset,
+
+head(df)
+nrow(df)
+ncol(df)
+str(df)
+summary(df)
+```
+
+
+```{r DATA PREPARATION}
+### Perform data preparation tasks and describe why it would be necessary or useful. Generate basic information on your data set again after preprocessing.
+
+### Create an "age group" variable with values "adult" or "elder". Anyone over 65 would be considered elder. This was done just in case we would like to analyze if elderly patients have a higher risk of death if they experience a Myocardial Infarction.
+
+df$age_group <- 'adult'
+df[df$age >= 65, ]$age_group <- 'elder'
+df$age_group <- as.factor(df$age_group)
+
+
+### Turn the Dead/Live values in the Outcome columns to 0/1. This is an important step when doing certain regression analysis.
+df$outcome_binary <- 0
+df[df$outcome == 'live', ]$outcome_binary <- 1
+
+
+head(df)
+ncol(df)
+summary(df)
+```
+
+```{r PLOTS}
+### Create some initial plots and describe what each one reveals
+age_table <- data.frame(table(df$age))
+
+### Barplot ###
+barplot <- ggplot(data = age_table, aes(x = Var1, y = Freq)) + 
+  geom_col() + 
+  labs(title = 'Frequency of Myocardial Infarction as Age Increases (Bargraph)', 
+       x = 'Age', 
+       y = 'Frequency')
+barplot
+### The age_bars barplot quickly shows there appears to be more occurances of Myocardial Infarction as age increases.
+
+
+### Histogram ###
+histogram <- hist(df$age)
+histogram
+### Standard bar graphs can sometimes be hard to read if there are too many values on the X axis. To make things easier, we can use a histogram, which is really similar to a bargraph. The difference is the bars are now "grouped".
+
+### Pie Chart ### 
+yrot <- data.frame(table(df$premi))
+pie <- pie(yrot$Freq, labels = yrot$Var1, main = 'Pie Chart')
+pie
+### Pie charts can be used to quickly identify proportions of various categories in the data. In this example, a pie chart was created to show what porportion of people in the dataset has had a Myocardial Infarction previously.
+```
+
+```{r Logistic Regression}
+### Perform a logistic regression to see if age has an effect on the outcome variable.
+
+logistic <- glm(outcome_binary~age, data=df, family=binomial(link='logit'))
+
+summary(logistic)
+```
+
+```{r Interpret Results}
+### The coefficient of the intercept is 3.97346, while the coefficient of the age variable is -.04656
+
+### If age is equal to zero, then the LogOdds would be Outcome = 3.973465 - 0.04656(0)
+Outcome0 <- 3.973465
+Outcome0
+
+### If age is equal to one, then the LogOdds would be Outcome = 3.973465 - 0.04656(1)
+Outcome1 <- 3.973465 - 0.04656
+Outcome1
+
+OddsRatio_Outcome <- Outcome0/Outcome1
+OddsRatio_Outcome
+
+### This ratio means that for each year age increases, the odds of death from Myocardial Infarction rises by 1.1857%
+```
+```{r Plot}
+log_plot <- ggplot(data=logistic, aes(x=age, y=outcome_binary)) + geom_point() + stat_smooth(method="glm", method.args=list(family="binomial"), se=TRUE, fullrange = TRUE)
+log_plot
+
+### Plotting the logistic regression. As age increases the odds of death from Myocardial Infarction increases by 1.1857%
+```

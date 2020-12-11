@@ -1,0 +1,81 @@
+---
+title: "Module 3 Programming Assignment"
+author: "Tuan Nguyen"
+date: "5/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r IMPORT DATASET}
+### Clear past variables and import the diabetes dataset. Load in packages.
+
+### Import the Mushroom dataset (retrieved from https://www.kaggle.com/uciml/mushroom-classification)
+
+### "This dataset includes descriptions of hypothetical samples corresponding to 23 species of gilled mushrooms in the Agaricus and Lepiota Family Mushroom drawn from The Audubon Society Field Guide to North American Mushrooms (1981). Each species is identified as definitely edible, definitely poisonous, or of unknown edibility and not recommended. This latter class was combined with the poisonous one."
+
+### Using this dataset, we will create and run a KNN classification with 10-fold cross validation model.
+
+rm(list=ls())
+df <- read.csv(file = 'C:\\Users\\cg\\Desktop\\Echo\\School\\DSC607\\Week 3\\mushrooms.csv')
+
+library(tidyverse)
+library(caret)
+library(pROC)
+library(rpart)
+library(mlbench)
+```
+
+```{r BASIC INFO}
+### Generate basic information about the dataset with some standard R functions
+
+head(df)
+nrow(df)
+ncol(df)
+str(df)
+summary(df)
+```
+
+```{r Preprocessing}
+### Remove the veil.type column since all the values in the column are the exact same and will not add anything to the analysis.
+
+df <- select(df,-'veil.type')
+```
+
+```{r Data Partition}
+### Create a training and test dataset from the original dataset.
+set.seed(1234)
+independent <- sample(2, nrow(df), replace = T, prob=c(0.7, 0.3))
+train <- df[independent==1,]
+test <- df[independent==2,]
+```
+
+``` {R K Nearest Neighbor}
+### Train our model to predict class labels with KNN and 10-Fold Cross Validation (Repeated 3 times) using the training subset of the Mushroom dataset.
+
+set.seed(222)
+model <- train(class ~ ., 
+                  data=train, 
+                  method = 'knn', 
+                  trControl=trainControl(method = 'repeatedcv', 
+                                         number = 10,
+                                         repeats = 3))
+print(model)
+```
+
+```{r Prediction}
+### Use our classification model to predict the class labels in the testing data subset. Review the ConfusionMatrix to identify the number of correctly guessed labels.
+
+prediction <- predict(model, newdata = test)
+confusionMatrix(prediction, test$class)
+```
+
+``` {R Interpretation}
+### Interpretation of Results
+
+### We trained the data using the training subset of data, and although 3-fold, 5-fold, and 9-fold cross validation had the same accuracy (99.95%), the final KNN model used 9 fold cross validation.
+
+### After data was trained, it was then used to apply class labels on the test subset of data. Reviewing the confusion matrix shows our model had 99.79% accuracy, only incorrectly labeling five instances.
+```

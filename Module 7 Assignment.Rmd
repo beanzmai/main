@@ -1,0 +1,71 @@
+---
+title: "Module 7 Assignment"
+author: "Tuan Nguyen"
+date: "4/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Clear Variables & Load Packages}
+### Clear past variables and load in packages.
+
+rm(list=ls())
+library(tidyverse)
+library(survival)
+library(ggplot2)
+```
+
+```{r Import Data}
+### Import and attach the sample dataset.
+
+df <- read.csv(file = "C:\\Users\\cg\\Desktop\\Echo\\School\\DSC503\\Module 7\\week7.csv")
+# attach(df)
+
+### Note on the variables:
+### The unit of the Time variable is Weeks.
+### The Dependent "Event" variable (AG) is binary with values 0 for AG Negative and 1 for AG Positive.
+### The Indepedent variable (WBC) stands for White Blood cell Count.
+```
+
+```{r head}
+head(df, 3)
+```
+
+```{r Summary}
+summary(df)
+```
+
+
+```{r Kaplan-Meier Model}
+### Kaplan-Meier Model.
+
+km <- survfit(Surv(time, AG) ~ 1, data=df)
+summary(km)
+
+### The summary for the KM model shows us the number of subjects at risk (n.risk) for an event "failure" (when an event occurs) during each time period. We can also see the number of events that did occur during that time period (n.event), and the cumulative survival rate at the end of each time period (survival).
+```
+
+```{r Plot Kaplan-Meir Model}
+### Plot the KM model.
+
+plot(km,  main = 'Survival Probability over Time', xlab = 'Weeks', ylab = 'Survival Probability')
+
+### The plot for the KM model shows us the decreasing survival probability (solid line) and associated intervals (dotted lines) over time. The horizontal lines in the plot represent the survival duration for each interval, which is then terminated when an event occurs. The verticle line is the change in cumulative probability over time.
+
+### To interpret the graph, let's try to identify the survival probability at 100 weeks. We can use the graph or the summary table to find that at the 100 week mark, our survival probability is .3927. This means that at 100 weeks, approximately 39.27% of these subjects have not yet "failed" (or had the event occur). As time goes on, the survival probability will decrase until the survival probability flattens or hits zero.
+
+```
+
+```{r Cox Proportional Hazard Model}
+### Use the Cox Proportional Hazard Model to identify the coefficient of the independent variable.
+cox <- coxph(Surv(time, AG) ~ WBC, data=df)
+summary(cox)
+```
+```{r Interpret CPH}
+### Our WBC coefficient is .015 and the exp(coef) is 1.02.
+
+### After reviewing the summary, we can interpret the coefficient of the Cox model as, "When the white blood cell count increases by 1 unit, the subject's hazard rate of event (testing AG Positive) will decrease by 98.5%
+```

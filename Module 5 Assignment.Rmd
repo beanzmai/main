@@ -1,0 +1,133 @@
+---
+title: "Module 5 Logistic Regression"
+author: "Tuan Nguyen"
+date: "4/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Import File}
+### This dataset is a simulated data set containing information on ten thousand customers. The aim here is to predict which customers will default on their credit card debt.
+### Source: http://vincentarelbundock.github.io/Rdatasets/doc/ISLR/Default.html
+
+
+df <- read.csv(file = "C:\\Users\\cg\\Desktop\\Echo\\School\\DSC503\\Module 5\\default.csv")
+```
+
+```{r Variables}
+### The "default" variable is a factor indicating whether the customer defaulted on their debt.
+### The "student" variable is a factor indicating whether the customer is a student.
+### The "balance" variable is the average balance that the customer has remaining on their credit card after making their monthly payment.
+### The "income"  variable is the income of the customer .
+```
+
+```{r Perform Summary Analysis}
+head(df)
+
+summary(df)
+```
+
+```{r Update "default" values}
+### We need to convert no/yes values into 0/1.
+
+df$default_binary <- 0
+df[df$default == 'Yes',]$default_binary <- 1
+```
+
+```{r Perform Summary Analysis #2}
+### Perform another summary analysis with this new column included.
+head(df)
+
+summary(df)
+```
+
+```{r Perform Logistic Regression Analysis}
+logistic <- glm(default_binary~student+balance+income, data=df, family=binomial(link='logit'))
+
+summary(logistic)
+```
+
+```{r Perform Logistic Regression Analysis #2}
+### I removed the income variables from analysis because its p value shows it's not important to the outcome I will rerun my analysis without this variable.
+
+logistic2 <- glm(default_binary ~ balance + student, data=df, family=binomial(link='logit'))
+
+summary(logistic2)
+```
+
+```{r Identify the Coefficients}
+### The coefficient of the intercept is -1.075e+01 (or -10.75)
+### The coefficient of the balance is 5.738e-03 (or 0.005738)
+### The coefficient of the studentYes is -7.149e-01 (or -0.7149)
+### The coefficients are in a form called "logits"
+```
+
+```{r Convert logits/coefficients to Odds then to Probability}
+
+### To convert the coefficients into probabilities, we first take the coefficients of the GLM output and use exp() to "de-logarithimize" and get odds.
+odds <- exp(coef(logistic2))
+odds
+
+### Then we Convert Odds to probbaility with the formula Probability = Odds/(1+Odds)
+probability <- odds/(1+odds)
+probability
+```
+
+```{r Predict Default based on Student Status}
+
+### If not StudentYes, then the Log Odds would be > Default = -10.75 + -0.7149(0)
+StudentYes0 <- -10.75
+StudentYes0
+
+### If StudentYes, then the Log Odds would be > Default = -10.75 + -0.7149(1)
+StudentYes1 <- -10.75 - 0.7149
+StudentYes1
+
+### StudentYes0 is the log(odds) of a non-student customer defaulting on their credit card. StudentYes1 indicates the decrease in the log(odds) that a student customer would default on their credit card. In other words, StudentYes1 is the log(odds ratio) of the odds that a student customer would default on their credit card, over the odds that a non student customer would default on their credit card. 
+
+OddsRatio_Student <- StudentYes1/StudentYes0
+OddsRatio_Student
+
+### The StudentYes variable as an odd ratio of 1.07, meaning the odds of defaulting increases by 7% for student customers.
+```
+
+```{r Predict Default based on Balance amount}
+
+### If Balance is equal to zero, then the LogOdds would be > Default = -10.75 + 0.005738(0)
+Balance0 <- -10.75
+Balance0
+
+### If Balance is equal to one, then the LogOdds would be > Default = -10.75 + 0.005738(1)
+Balance1 <- -10.75 + 0.005738
+Balance1
+
+### Following a similar process as above we would get the odds ratio of the balance variable with the following code:
+
+OddsRatio_Balance <- Balance0/Balance1
+OddsRatio_Balance
+
+### This ratio means that for each unit (dollar) that the balance variable increases, the odds of defaulting rises by .05%
+```
+
+```{r Graph Logistic with Balance}
+### Plotting a logistic regression graph using balance on the X axis.
+
+library(ggplot2)
+
+ggplot(
+  data=logistic2, 
+  aes(x=balance, y=default_binary)) + 
+  geom_point() + 
+  stat_smooth(method="glm", method.args=list(family="binomial"), se=TRUE, fullrange = TRUE)
+```
+
+
+
+```{r References}
+### References
+# Bruce, A., & Bruce, P. (2017). Practical Statistics for Data Scientists. 50 Essential Concepts. Sebastopol, CA: O’Reilly Media, Inc.
+# Credit Card Default Data. Retrieved April 15, 2020 from http://vincentarelbundock.github.io/Rdatasets/doc/ISLR/Default.html 
+```

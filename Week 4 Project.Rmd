@@ -1,0 +1,113 @@
+---
+title: "Week 4 Project"
+author: "Tuan Nguyen"
+date: "4/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Import File}
+### The diamonds dataset contains the prices and other attributes of almost 54,000 diamonds.
+
+diamonds <- read.csv(file = "C:\\Users\\cg\\Desktop\\Echo\\School\\DSC503\\Module 4\\diamonds.csv")
+```
+
+```{r Variables}
+### Price is price in US dollars.
+### Carat is the weight of the diamond.
+### Cut is quality of the cut (Fair, Good, Very Good, Premium, Ideal)
+### Color is diamond color from J (worst) to D (best)
+### Clarity is a measurement of how clear the diamond is (I1 (worst), SI2, SI1, VS2, VS1, VVS2, VVS1, IF (best))
+### X is length in mm
+### Y is width in mm
+### Z is depth in mm
+```
+
+```{r Perform Summary Analysis}
+
+head(diamonds, 5)
+
+summary(diamonds)
+```
+
+```{r Rearrange Levels for Cut, Color, and Clarity columns}
+cut <- factor(diamonds$cut, levels = c('Fair','Good','Very Good', 'Premium', 'Ideal'))
+color <- factor(diamonds$color, levels = c('J','I','H','G','F','E','D'))
+clarity <- factor(diamonds$clarity, levels = c('I1', 'SI2', 'SI1', 'VS2', 'VS1', 'VVS2', 'VVS1', 'IF'))
+```
+
+
+```{r Linear Regression Analysis}
+
+### I removed the x, y, and z variables after learning length, width, and depth of diamonds are generally not relevant during the process of buying diamonds. Then I reran my analysis.
+
+diamonds_lra <- lm(price~carat+cut+color+clarity, data = diamonds)
+
+summary(diamonds_lra)
+confint(diamonds_lra)
+```
+
+
+```{r Interpretation of the Data}
+### Interpretation of the Residuals
+# Residuals are the differences between observed and estimated values.
+# The median residual value suggests that our model predicts slightly lower values of prices than observed.
+
+### Interpretation of the intercept
+# The intercept is the estimated Y value if all the X variables were at their "base" value.
+# Therefore, a zero carat diamond, with a "fair" cut, "D" color, and "I1" clarity, would cost -7362.80
+
+### Interpretation of the T Statistic
+# The T Statistic (t value) evaluates whether there is a significant association between the predictor variable and the outcome variable. 
+#The result of our lm() code shows that changes in all predictor variables are significantly associated with the change in price (outcome variable).
+
+### Interpretation of the P Values (PR(>|t|))
+# This value indicates the significance of each test statistic.
+# A value of <2e-16 is smaller than the alpha level of .05 so these variables are significant.
+
+### Interpretation of the coefficients
+# Each variable has its own regression coefficient, which represents the rate of change of one variable (y) as a function of changes in the other (x).
+# For each unit of increase in the Carat variable, the price of a diamond is estimated to increase by 8886.13
+# The price of diamonds with a "good" cut are estimated to increase by 655.77
+# The price of diamonds with a "very good" cut are estimated to increase by 848.72
+# The price of diamonds with a "premium" cut are estimated to increase by 869.40
+# The price of diamonds with a "ideal" cut are estimated to increase by 998.25
+# The price of diamonds with a color "E" are estimated to decrease by 211.68
+# The price of diamonds with a color "F" are estimated to decrease by 303.31
+# The price of diamonds with a color "G" are estimated to decrease by 506.20
+# The price of diamonds with a color "H" are estimated to decrease by 978.70
+# The price of diamonds with a color "I" are estimated to decrease by 1440.30
+# The price of diamonds with a color "J" are estimated to decrease by 2325.22
+# The price of diamonds with an "SI2" clarity are estimated to increase by 2625.95
+# The price of diamonds with an "SI1" clarity are estimated to increase by 3573.69
+# The price of diamonds with an "VS2" clarity are estimated to increase by 4217.83
+# The price of diamonds with an "VS1" clarity are estimated to increase by 4534.88
+# The price of diamonds with an "VVS2" clarity are estimated to increase by 4967.20
+# The price of diamonds with an "VVS1" clarity are estimated to increase by 5072.03
+# The price of diamonds with an "IF" clarity are estimated to increase by 5419.65
+# Example: A 2 carat diamond w/ an "ideal" cut, "E" color, and "IF" clarity would be estimated to cost:
+#            Price = Intercept + (2)*carat     + "Ideal" Cut + "E" Color + "IF" clarity.
+#            Price = -7362.8   + (2)*8886.13   + 998.25      + -211.68   + 5419.65
+#            The total: 16615.68
+
+### Interpretation of the R Squared Value
+# The R squared value is the proportion of variance explained by the model, from 0 to 1.
+# The lm() command returns an R Squared value of .9159. This means approximately 92% of the variation in diamond prices can be explained by our linear regression model. 
+```
+
+```{r Plot Analysis}
+### Use plot() to analyze the linear regression analysis.
+# The Residuals vs Fitted plot shows if residuals have non linear patterns due to a non-linear relationship between predictor and outcome variables. If the residuals are equally spread out around a horizon line without any patterns then that is a good sign you do not have a non-linear relationship.
+# The Normal QQ plot shows if residuals are normally distributed. It's a good sign if residuals are lined up along the straight dashed line.
+# The Scale-Location plot shows if residuals are spread equally along the ranges of predictors. This graph can help you check homoscedasticity.
+# Lastly, the residuals vs leverage plot helps us find influential cases if any.
+
+# Source: University of Virginia Library. Understanding Diagnostic Plots for Linear Regression Analysis. (2015, September 21). Retrieved April 11, 2020 from https://data.library.virginia.edu/diagnostic-plots/
+
+par(mfrow=c(2,2))
+plot(diamonds_lra)
+
+```
