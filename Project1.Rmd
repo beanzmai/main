@@ -1,0 +1,16 @@
+---
+title: 'DSC 503: Statistical Methods Programming Project 1 - Tuan Nguyen'
+author: "Tuan Nguyen"
+date: "3/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r project 1}
+project1 <- 'Hello Utica College!'
+print(project1)
+```
