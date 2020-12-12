@@ -1,0 +1,202 @@
+---
+title: "Module 8 Final Assignment"
+author: "Tuan Nguyen"
+date: "4/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r Packages}
+### PACKAGES ### 
+### Clear Past Variables and Load in Packages
+
+rm(list=ls())
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(dplyr)
+library(fpp2)
+```
+
+```{r Import and Attach Dataset}
+### DATA ###
+
+nypd <- read.csv(file = "C:\\Users\\cg\\Desktop\\Echo\\School\\DSC503\\Course Project\\NYPD Shootings\\nypd.csv")
+
+### This dataset is the NYPD Shooting Incident Data (Historic) dataset from the New York Police Department (NYPD). It contains every shooting incident which occured in New York City (NYC) between 2006 and 2019. Time series analysis will be performed using this dataset for the DSC 503 final course project.
+```
+
+```{r Note1}
+### Quickly examine the dataset with a few standard functions
+```
+
+```{r Head}
+head(nypd) # View the first few rows of the dataset
+```
+
+```{r nrow}
+nrow(nypd) # Count how many rows are in the dataset
+```
+
+```{r ncol}
+ncol(nypd) # Count how many columns are in the dataset
+```
+
+```{r colnames}
+colnames(nypd) # Identify the column names
+```
+
+```{r str}
+str(nypd) # Identify the data types of each column
+```
+
+```{r summary}
+summary(nypd)
+```
+
+```{r Count + Date}
+### DATA PREPROCESSING ###
+
+### The imported dataset contains over 20,000 records available for analysis and forecasting. There are 18 columns (variables) in the dataset, but the only one necessary to our analysis is the "OCCUR_DATE" variable. 
+
+### Since most of the variables in our dataset are not being incldued in analysis, a new table with only three variables will be created. The first two variables of this table are YEAR and MONTH, which was taken this from the OCCUR_DATE column in the original dataset. The third variable is a count of shootings which occured during each month of a year. The first two variables (YEAR and MONTH) will be used as the independent variable during analysis, while the Count variable will be the dependent variable, and the variable which will be forecasted.
+
+
+table <- count(nypd, OCCUR_DATE) # Create a table of the total shootings per day in the dataset
+
+table$OCCUR_DATE <- mdy(table$OCCUR_DATE) # Convert the OCCUR_DATE column into a the correct data type (date) using the mdy() function.
+
+table <- table %>% mutate(year=year(OCCUR_DATE)) # Use mutate() to separate month from the entire date.
+
+table <- table %>% mutate(month=month(OCCUR_DATE)) # Use mutate() to separate year from the entire date.
+
+table <- table %>% group_by(year, month) %>% summarise(count = sum(n)) # Use group_by() and summarise() to get the final table.
+
+table
+
+summary(table)
+```
+
+```{r Autoplot}
+
+### Before performing time series analysis, the data needs to be identified as time series data in R. Using the ts() will let R know the data is to be time series, when the data started, and the frequency of the data.
+
+ts <- ts(table[,3], start = c(2006,1), frequency = 12) #Use the ts() function to declare there is Time Series data in my data set.
+
+### Once time series data has been declared, a plot of monthly shootings over time will be created. This plot gives us a quick glimpse of the data over time and helps identify at a very high level if there are any seasonality, stationarity, or trends. Additional functions will be used afterwards to confirm these observations.
+
+autoplot(ts) + 
+  ggtitle('Monthly Number of Shootings over Time') + 
+  xlab('Year') + 
+  ylab('Count of Shootings per Month')
+
+```
+
+```{r Remove Trends}
+### Looking at the plot above, there does appears to be some seasonality in the data (seasonality refers to period fluctuations in our dataset). 
+
+### Before checking for seasonality however, let's check for stationarity. Stationarity is an important part of time series analysis, and data is said to be stationary if it's mean and variance does not change over time. To check for stationary, start by looking at the change in number of shootings from month to month, using the diff() function before plotting the differences.
+
+difference <- diff(ts)
+summary(difference)
+
+autoplot(difference) + 
+  ggtitle('Change in Count of Shootings') + 
+  xlab('Year') + 
+  ylab('Count')
+```
+
+```{r Seasonality}
+### Although the difference plot appears stationary, the summary() returns a mean value of -.2683, which means the data is not stationary. For data to be stationary, the mean would have to equal zero.
+
+### Now that a check for stationary has been performed, let's check for possible seasonalities using ggseasonplot().
+
+ggseasonplot(difference) + 
+  ggtitle('Seasonality Plot: Change in Number of Monthly Shootings') + 
+  xlab('Month') + 
+  ylab('Count')
+```
+
+```{r Seasonality 2}
+### Looking at the resulting graph, there does appear to be some seasonality in the data. Specifically, there is a slight increase in shootings during the spring and summer months. Another plot can be used to analyze seasonality further; specifically, the Seasonality Subseries Plot.
+
+ggsubseriesplot(difference) + 
+  ggtitle('Seasonality Plot: Change in Number of Monthly Shootings') + 
+  xlab('Month') + 
+  ylab('Count')
+```
+```{r Interpret Seasonality}
+### The Seasonality Subseries graph charts the changes between years for each month. The blue line in the plot is the average of each month across different years. This graph further confirms the above suspicions there is seasonality in the data, as it shows spring/summer months have slightly higher shootings than the rest of the year.
+
+### Identifying whether or not our data is stationary or has any seasonality is important because it helps to decide which model to utilize in order to perform any forecasts with our data.
+```
+
+```{r Seasonal Naive}
+### MODELS ###
+
+### After checking for seasonality and stationarity, mutliple modeling methods will be utilized to help prepare for forecasting.
+
+### A few different different models will be tested, starting with the seasonal naive (SNAIVE) method. The SNAIVE method is useful when we have seasonal data, where we can set our forecasts to be equal to the last observed value from the season during a previous timeframe (Otexts, 2020).
+
+fit <- snaive(difference)
+summary(fit)
+checkresiduals(fit)
+```
+
+```{r Exponential Smoothing}
+### There are a few things to look for in the SNAIVE summary and residuals plot.
+
+### First, the SNAIVE method returns a residual standard deviation of 31.53. This value measures how well our data fits, with smaller numbers being better. Before performing a forecast, a model with a low residual standard deviation should be identified.
+
+### Then, use the checkresiduals() function to see how much autocorrelation exists in the model. Ideally, all the black lines in the ACF plot would be within the confines of the two blue dashed lines. Since the black lines are outside of the blue lines, this means there is still autocorrelation left over in the residuals, meaning the model is not using the data as well as it could be.
+
+### Next, try the exponential smoothing model to see if an even lower residual standard deviation and better ACF plot can be obtained. This model is good for forecasting data with no clear trends (Otexts, 2020).
+
+ets <- ets(ts)
+summary(ets)
+checkresiduals(ets)
+
+```
+
+```{r ARIMA}
+### The "Sigma" (residual standard deviation) in the ETS model summary is .1516. This value has dropped from the 31.53 obtained from the SNAIVE model, meaning this ETS model fits a lot better than the previous one. In addition, the ACF plot has all the black lines within the confines of the blue dotted lines, which is exactly what we were shooting for. This means there is no longer any autocorrelation in the model. 
+
+### Although our ETS model had an excellent Residual Standard Deviation and ACF plot, one last model can be created to see if it'll do even better than the exponential smoothing model.This last model is the Auto Regressive Integrated Moving Average (ARIMA) model.
+
+arima <- auto.arima(ts, d=1, D=1, stepwise=FALSE, approximation=FALSE, trace=TRUE)
+summary(arima)
+checkresiduals(arima)
+```
+
+```{r Forecast}
+### To get the residual standard deviation from our ARIMA model, we take the Square Root of the Sigma^2 value in the ARIMA Summary. The SQRT of 458.8 is 21.42, meaning the previous model (exponential smoothing) is better than the ARIMA model since it had a lower residual standar deviation and better ACF plot.
+
+### Now that the Exponential Smoothing model has been identified as the most optimized method, a forecast can be performed using the forecast() function. The forecast() function takes the ETS model and forecasts "h" amount into the future. For this forecast, the h will be set at 36 months (3 years).
+
+forecast <- forecast(ets, h=36)
+autoplot(forecast) + 
+  ggtitle('Three Year Forecast of Shootings in NYC') + 
+  xlab('Year') + 
+  ylab('Count of Shootings each Month')
+summary(forecast)
+```
+```{r Interpret Forecast}
+### To check the accuracy of the forecast, take a look at the error measures. Specifically, the mean absolute percentage error (MAPE) value in the summary (12.44) can be interpreted to mean the forecast is 87.56% accurate (100-12.44 = 87.56).
+
+### The forecast() function first returns a plot of our forecast, then a data frame containing point forecasts as well as the upper and lower bounds of shooting counts 36 months into the future. The upper and lower bound values are the confidence intervals of the data. With the forecast plot, it's possible to see the forecasted values also have seasonality and is stationary just like the original data.
+
+### Using these time series models and forecasts serves as the statistical ground work for my DSC 503 Course project.
+```
+
+```{r Citations}
+### Works Cited
+
+# NYPD Shooting Incident Data (Historic). (May 21, 2019). Retrieved April 20, 2020, from https://catalog.data.gov/dataset/nypd-shooting-incident-data-historic
+
+# Otexts. Simple exponential smoothing. Retreived May 2, 2020 from https://otexts.com/fpp2/ses.html
+
+# Otexts. Some simple forecasting methods. Retreived May 2, 2020 from https://otexts.com/fpp2/simple-methods.html
+
+```
